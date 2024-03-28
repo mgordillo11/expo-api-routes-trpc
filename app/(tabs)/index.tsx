@@ -1,9 +1,9 @@
 import React, { Suspense } from "react";
-import { Text, View, StyleSheet, TouchableOpacity } from "react-native";
+import { Text, View, StyleSheet, Pressable } from "react-native";
 import { Hello } from "@/components/Hello";
 import { api } from "@/trpc/react";
 
-export default function Page() {
+export default function TabOneScreen() {
   const utils = api.useUtils();
 
   const handleRefetch = () => {
@@ -17,9 +17,9 @@ export default function Page() {
         <Suspense fallback={<Text>Loading...</Text>}>
           <Hello />
         </Suspense>
-        <TouchableOpacity style={styles.button} onPress={handleRefetch}>
+        <Pressable style={styles.button} onPress={handleRefetch}>
           <Text style={styles.buttonText}>Refetch</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );
@@ -28,7 +28,7 @@ export default function Page() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: '100%',
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
     marginHorizontal: "auto",
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: "black",
     padding: 10,
-    borderRadius: 10
+    borderRadius: 10,
   },
   buttonText: {
     color: "white",

@@ -6,10 +6,10 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import { initTRPC } from "@trpc/server";
+import { TRPCError, initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
-
+import { type Context } from "./context";
 // import { db } from "~/server/db";
 const db = {};
 
@@ -25,12 +25,32 @@ const db = {};
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async (opts: { headers: Headers }) => {
-  return {
-    db,
-    ...opts,
-  };
-};
+
+// Context holds the data that all of your tTPC procedures will have access to
+// export const createTRPCContext = async ({
+//   req,
+// }: FetchCreateContextFnOptions) => {
+//   const secretKey = process.env.CLERK_PUBLISHABLE_KEY;
+
+//   const token = req.headers.get("x-clerk-auth-token");
+//   const sessionId = req.headers.get("x-clerk-auth-session-id");
+
+//   console.log("secretKey234", secretKey);
+//   console.log("token234", token);
+//   console.log("sessionId234", sessionId);
+
+//   let session = null;
+//   if (token && sessionId) {
+//     console.log("Verifying session");
+//     console.log("Session Verified", session);
+//   }
+
+//   return {
+//     session,
+//   };
+// };
+
+// type TRPC_Context = inferAsyncReturnType<typeof createTRPCContext>;
 
 /**
  * 2. INITIALIZATION
@@ -39,7 +59,7 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
  * ZodErrors so that you get typesafety on the frontend if your procedure fails due to validation
  * errors on the backend.
  */
-const t = initTRPC.context<typeof createTRPCContext>().create({
+const t = initTRPC.context<Context>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
     return {
@@ -60,6 +80,17 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
  * "/src/server/api/routers" directory.
  */
 
+const isAuthed = t.middleware(({ next, ctx }) => {
+  if (!ctx.auth.userId) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authenticated" });
+  }
+  return next({
+    ctx: {
+      auth: ctx.auth,
+    },
+  });
+});
+
 /**
  * This is how you create new routers and sub-routers in your tRPC API.
  *
@@ -75,3 +106,13 @@ export const createTRPCRouter = t.router;
  * are logged in.
  */
 export const publicProcedure = t.procedure;
+
+/**
+ * Authenticated procedure
+ *
+ * This is the base piece you use to build new queries and mutations on your tRPC API. It guarantees
+ * that a user querying is authorized, and you can access user session data.
+ *
+ */
+
+export const protectedProcedure = t.procedure.use(isAuthed);
